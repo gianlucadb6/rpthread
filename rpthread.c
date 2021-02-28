@@ -163,6 +163,7 @@ static void sched_mlfq() {
 	// YOUR CODE HERE
 }
 
+//this method and main are just for testing purposes
 void doTheThing() {
 	ucontext_t cntx;
 	printf("printing...\n");
