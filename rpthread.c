@@ -18,7 +18,6 @@ int idNum = 0;
 node* runqueue; 
 
 
-
 // And more ...
 /* create a new thread */
 int rpthread_create(rpthread_t * thread, pthread_attr_t * attr, 
