@@ -20,37 +20,47 @@ node* runqueue;
 
 // And more ...
 /* create a new thread */
-int rpthread_create(rpthread_t * thread, pthread_attr_t * attr, 
-		void *(*function)(void*), void * arg) {
+int rpthread_create(rpthread_t * thread, pthread_attr_t * attr, void *(*function)(void*), void * arg) {
 	// create Thread Control Block
 	// create and initialize the context of this thread
 	// allocate space of stack for this thread to run
 	// after everything is all set, push this thread int
 	// YOUR CODE HERE
 	tcb* newBlock = malloc(sizeof(tcb));
+	
 	void* stack = malloc(STACK_SIZE);
 	idNum++;
+	
 	ucontext_t cntx;
 	getcontext(&cntx);
+	
 	cntx.uc_link = NULL;	//should point to successor function
 	cntx.uc_stack.ss_sp = stack;
 	cntx.uc_stack.ss_size = STACK_SIZE;
 	cntx.uc_stack.ss_flags=0;
+	
 	newBlock->threadid = idNum;
 	thread = &newBlock->threadid;
+	
 	newBlock->status = 0;
 	newBlock->priority = 4;
+	
 	makecontext(&cntx, (void*)function, 0);	
+	
 	newBlock->context = &cntx;
 	appendToQ(newBlock);
+	
 	return 0;
+
 };
 
 void appendToQ(tcb* block) {
+	
 	node* newNode = malloc(sizeof(node));
 	newNode->TCB = *block;
 	newNode->next = runqueue;
 	runqueue = newNode;
+
 }
 
 /* give CPU possession to other user-level threads voluntarily */
@@ -66,9 +76,71 @@ int rpthread_yield() {
 
 /* terminate a thread */
 void rpthread_exit(void *value_ptr) {
-	// Deallocated any dynamic memory created when starting this thread
 
+
+
+/*  
+Assumptions:  
+			- Only one read can run at a time  
+			- If this function is called it was done by a thread that was running
+
+idea: if this function is called find the first thread in runqueue that has status running, 
+go to that thread and dequeue it. Once dequeued, we can then free it's stack and remove it's  
+tcb
+*/
 	// YOUR CODE HERE
+		
+	node* ptr = runqueue; 
+		
+	
+		
+
+
+				printf("one \n" );
+
+				if(ptr->TCB.status == 1 ){ 
+							printf("one");
+							free(ptr->TCB.context->uc_stack.ss_sp); 
+							free(&ptr->TCB); 
+							node * hold = runqueue; 
+							
+							runqueue = runqueue->next;
+							
+							free(hold);
+						}
+
+
+
+				while(ptr->next!=NULL){ 
+							printf("two\n");
+
+						if(ptr->next->TCB.status == 1 ){ 
+							free(ptr->next->TCB.context->uc_stack.ss_sp); 
+							free(&ptr->next->TCB); 
+							free(ptr->next); 
+							
+							ptr->next= NULL;
+													
+						} 
+
+							ptr->next= ptr->next->next;
+
+				}
+
+					if(ptr->TCB.status == 1 ){ 
+								printf("three\n");
+
+							free(ptr->TCB.context->uc_stack.ss_sp); 
+							free(&ptr->TCB); 
+							free(ptr); 
+												} 
+
+
+			
+		
+
+		
+			
 };
 
 
@@ -167,8 +239,9 @@ static void sched_mlfq() {
 void doTheThing() {
 	ucontext_t cntx;
 	printf("printing...\n");
-	getcontext(&cntx);
-	swapcontext(&cntx, &mainCntx);
+//	getcontext(&cntx);
+//	swapcontext(&cntx, &mainCntx);
+	rpthread_exit(NULL); 
 }
 
 int main() {
