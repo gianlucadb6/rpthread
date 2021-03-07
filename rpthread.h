@@ -102,6 +102,9 @@ int rpthread_mutex_destroy(rpthread_mutex_t *mutex);
 /*add tcb ptr to front of runqueue*/
 void appendToQ(tcb* block);
 
+/*scheduler function */
+static void schedule(void); 
+
 #ifdef USE_RTHREAD
 #define pthread_t rpthread_t
 #define pthread_mutex_t rpthread_mutex_t

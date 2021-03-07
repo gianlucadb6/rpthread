@@ -15,7 +15,7 @@ static ucontext_t mainCntx;
 
 int idNum = 0;
 
-node* runqueue; 
+node* runqueue = NULL; 
 
 
 // And more ...
@@ -26,41 +26,56 @@ int rpthread_create(rpthread_t * thread, pthread_attr_t * attr, void *(*function
 	// allocate space of stack for this thread to run
 	// after everything is all set, push this thread int
 	// YOUR CODE HERE
+	
 	tcb* newBlock = malloc(sizeof(tcb));
 	
 	void* stack = malloc(STACK_SIZE);
 	idNum++;
 	
+	if(stack == NULL){ 
+		perror("no mem");
+	}
 	ucontext_t cntx;
 	getcontext(&cntx);
 	
 	cntx.uc_link = NULL;	//should point to successor function
 	cntx.uc_stack.ss_sp = stack;
 	cntx.uc_stack.ss_size = STACK_SIZE;
-	cntx.uc_stack.ss_flags=0;
+	cntx.uc_stack.ss_flags = 0;
 	
 	newBlock->threadid = idNum;
 	thread = &newBlock->threadid;
 	
-	newBlock->status = 0;
+	newBlock->status =0;
 	newBlock->priority = 4;
 	
 	makecontext(&cntx, (void*)function, 0);	
 	
 	newBlock->context = &cntx;
-	appendToQ(newBlock);
+	appendToQ(newBlock); 
 	
-	return 0;
-
+	return atexit( (void *)(*schedule));
 };
 
 void appendToQ(tcb* block) {
 	
 	node* newNode = malloc(sizeof(node));
-	newNode->TCB = *block;
-	newNode->next = runqueue;
-	runqueue = newNode;
+	
 
+	newNode->TCB = *block;
+	newNode->next = NULL;
+	if(runqueue == NULL){ 
+		runqueue  = newNode;
+		return;
+	} 
+
+	node * ptr = runqueue; 
+	while(ptr->next!= NULL){ 
+		ptr = ptr->next; 
+	} 
+	ptr->next = newNode;
+	
+	return;
 }
 
 /* give CPU possession to other user-level threads voluntarily */
@@ -89,24 +104,28 @@ go to that thread and dequeue it. Once dequeued, we can then free it's stack and
 tcb
 */
 	// YOUR CODE HERE
-		
+	
+	if(runqueue == NULL){ 
+		return;
+	}
+
 	node* ptr = runqueue; 
 		
-	
+			
 		
 
 
-				printf("one \n" );
+//				printf("one \n" );
 
 				if(ptr->TCB.status == 1 ){ 
 							printf("one");
-							free(ptr->TCB.context->uc_stack.ss_sp); 
-							free(&ptr->TCB); 
+						//	free(ptr->TCB.context->uc_stack.ss_sp); 
 							node * hold = runqueue; 
 							
 							runqueue = runqueue->next;
 							
 							free(hold);
+							return;
 						}
 
 
@@ -115,12 +134,11 @@ tcb
 							printf("two\n");
 
 						if(ptr->next->TCB.status == 1 ){ 
-							free(ptr->next->TCB.context->uc_stack.ss_sp); 
-							free(&ptr->next->TCB); 
+							//free(ptr->next->TCB.context->uc_stack.ss_sp); 
 							free(ptr->next); 
 							
 							ptr->next= NULL;
-													
+							return;							
 						} 
 
 							ptr->next= ptr->next->next;
@@ -130,9 +148,9 @@ tcb
 					if(ptr->TCB.status == 1 ){ 
 								printf("three\n");
 
-							free(ptr->TCB.context->uc_stack.ss_sp); 
-							free(&ptr->TCB); 
+							//free(ptr->TCB.context->uc_stack.ss_sp); 
 							free(ptr); 
+							return;
 												} 
 
 
@@ -194,6 +212,20 @@ int rpthread_mutex_destroy(rpthread_mutex_t *mutex) {
 
 /* scheduler */
 static void schedule() {
+	puts("we made it");
+	
+
+		node * ptr = runqueue; 
+
+		while( ptr != NULL ){ 
+			if(ptr->TCB.status == 0 ){ 
+				ptr->TCB.status = 1; 
+				setcontext(ptr->TCB.context);
+			 	return;
+			 }
+			ptr = ptr->next;
+		}
+	
 	// Every time when timer interrup happens, your thread library 
 	// should be contexted switched from thread context to this 
 	// schedule function
@@ -216,7 +248,7 @@ static void schedule() {
 	// Choose MLFQ
 	// CODE 2
 #endif
-
+return;
 }
 
 /* Round Robin (RR) scheduling algorithm */
@@ -237,29 +269,25 @@ static void sched_mlfq() {
 
 //this method and main are just for testing purposes
 void doTheThing() {
-	ucontext_t cntx;
 	printf("printing...\n");
-//	getcontext(&cntx);
-//	swapcontext(&cntx, &mainCntx);
-	rpthread_exit(NULL); 
+	rpthread_exit(NULL);
+//	return;
+	
 }
 
 int main() {
 	//ucontext_t mainCntx;
 	getcontext(&mainCntx);
-	rpthread_t thread1, thread2, thread3;	
-	rpthread_create(&thread1, NULL, (void*)doTheThing, NULL);
-	rpthread_create(&thread2, NULL, (void*)doTheThing, NULL);
+	rpthread_t thread1, thread2, thread3;	 
+	int a = rpthread_create(&thread1, NULL, (void*)doTheThing, NULL);
+	printf("success, on %d \n",a);
+//	runqueue = NULL;
+	int b = rpthread_create(&thread2, NULL, (void*)doTheThing, NULL); 
+		printf("success, on %d \n", b); 
+//	runqueue = NULL;
 	rpthread_create(&thread3, NULL, (void*)doTheThing, NULL);	
-	node* ptr = runqueue;
-	ucontext_t c;
-	tcb* t;
-	while(ptr != NULL) {
-		t = &ptr->TCB;
-		swapcontext(&mainCntx, t->context);
-		ptr = ptr->next;
-	}	
-	return 0;	
+	
+	return 0;
 }
 
 // Feel free to add any other functions you need
