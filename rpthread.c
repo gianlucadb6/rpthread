@@ -11,12 +11,24 @@
 // INITAILIZE ALL YOUR VARIABLES HERE
 // YOUR CODE HERE
 
+ucontext_t * scheudle_hold;
 static ucontext_t mainCntx, schedCntx, curCntx;
 
 
 int idNum = 0;
+ 
+int * schedule_init = &idNum; // value used to assit in initializing saved context for  scheduler 
+
+int flip_main = 0;
+
 
 node* runqueue = NULL; 
+
+void timer_interupt(int signum){
+	printf("RING RING! The timer has gone off\n");
+	setcontext(scheudle_hold); 
+
+}
 
 
 // And more ...
@@ -27,6 +39,8 @@ int rpthread_create(rpthread_t * thread, pthread_attr_t * attr, void *(*function
 	// allocate space of stack for this thread to run
 	// after everything is all set, push this thread int
 	// YOUR CODE HERE
+  
+
 	if(idNum == 0) {
 		if(getcontext(&mainCntx)<0) {
 			printf("unable to set up main context\n");
@@ -254,26 +268,98 @@ int rpthread_mutex_destroy(rpthread_mutex_t *mutex) {
 
 /* scheduler */
 static void schedule() {
+	
+	if(*schedule_init ==1){ 
+			ucontext_t cntx1;
+			getcontext(&cntx1);
+			scheudle_hold  = &cntx1; // save the context of scheduler in global pointer
+				
+	}
+	
+	
+	
 	puts("Entering scheduler...\n");
 	int  i = 1;	
-	node* ptr = dequeue(); 
+//	node* ptr = dequeue(); 
+	
+node * ptr = runqueue;	
+	
+	// Use sigaction to register signal handler
+	struct sigaction sa;
+	memset (&sa, 0, sizeof (sa));
+	sa.sa_handler = &timer_interupt;
+	sigaction (SIGPROF, &sa, NULL);
+
+	// Create timer struct
+	struct itimerval timer;
+
+	timer.it_interval.tv_usec = 0; 
+	timer.it_interval.tv_sec = 0;
+
+	// Set up the current timer to go off in 1 second
+	// Note: if both of the following values are zero
+	//       the timer will not be active, and the timer
+	//       will never go off even if you set the interval value
+	timer.it_value.tv_usec = 0;
+	timer.it_value.tv_sec = 1;
+
+	// Set the timer up (start the timer)
+	
+	// Kill some time
+	
+//	if(flip_main == 0){
+//		flip_main =1 ;
+		
+//		node * ptr2 = runqueue;
+	//	while(ptr != NULL){
+			
+		//	if( ptr->TCB.status == 0){
+			//		while(ptr2!= NULL){ 
+				//			if(ptr2->TCB.status ==1){ 
+					//			ptr2->TCB.status = 0;
+						//	} 
+					//		ptr2 = ptr2->next;
+					//}  
+
+					//ptr->TCB.status = 1;
+					setitimer(ITIMER_PROF, &timer, NULL);
+					setcontext(ptr->TCB.context); 
+				//	return;
+			//	}
+			//	ptr = ptr->next;
+			
+	//		}
+//} 
+//else{ 
+	//	flip_main = 0;
+	
+///}
+		
+
+
+	/*	
+	
 	if(ptr != NULL){//1?
-		//printf("%d\n", i);
+				//printf("%d\n", i);
 		//++i; 
 		if(ptr->TCB.status == 0 ){ 
+			puts("in the arg");
 			node* curThread = runqueue;
-			while(curThread->TCB.status != 1) {
-				curThread = curThread->next;
-			}
+//			while(curThread->TCB.status != 1) {  // this won't work becuase it will move directly too segfault
+//				curThread = curThread->next;
+//			}
 			curThread->TCB.status = 0;
 			ptr->TCB.status = 1; 
-			swapcontext(curThread->TCB.context, ptr->TCB.context);
-			printf("returning from thread...\n");
+			setitimer(ITIMER_PROF, &timer, NULL);
+		//	swapcontext(curThread->TCB.context, ptr->TCB.context);
+			setcontext(ptr->TCB.context);
+		printf("returning from thread...\n");
 			//getcontext(&mainCntx);
 			//ptr = runqueue;
 			//continue;
 		}
-	}
+	}*/ 
+
 	/*ptr = runqueue;
 	while(ptr != NULL) {
 		swapcontext(&mainCntx, ptr->TCB.context);
