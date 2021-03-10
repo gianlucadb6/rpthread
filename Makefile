@@ -24,3 +24,4 @@ endif
 
 clean:
 	rm -rf testfile *.o *.a
+

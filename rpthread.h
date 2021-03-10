@@ -100,7 +100,10 @@ int rpthread_mutex_unlock(rpthread_mutex_t *mutex);
 int rpthread_mutex_destroy(rpthread_mutex_t *mutex);
 
 /*add tcb ptr to front of runqueue*/
-void appendToQ(tcb* block);
+void enqueue(tcb* block);
+
+/*pop node off of runqueue*/
+tcb* dequeue(node* runqueue);
 
 /*scheduler function */
 static void schedule(void); 
