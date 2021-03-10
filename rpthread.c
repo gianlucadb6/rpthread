@@ -103,10 +103,10 @@ void enqueue(tcb* block) {
 	return;
 };
 
-tcb* dequeue(node* runqueue) {
-	node* ptr = runqueue;
+node* dequeue() {
+	node* ptr= runqueue;
 	runqueue = runqueue->next;
-	return &ptr->TCB;
+	return ptr;
 };
 
 
@@ -117,7 +117,17 @@ int rpthread_yield() {
 	// save context of this thread to its thread control block
 	// witch from thread context to scheduler context
 	node* ptr = runqueue;
-	node* prev = NULL;
+	if(ptr->TCB.status == 1) {
+		ptr->TCB.status = 0;
+		dequeue();
+		enqueue(&ptr->TCB);
+		printf("yielded...\n");
+		swapcontext(ptr->TCB.context, &schedCntx);
+	}
+	return 0;
+}
+
+	/*node* prev = NULL;
 	while(ptr!=NULL) {
 		if(ptr->TCB.status == 1) {
 			//set status to 0, readjust list, and swapcontexts
@@ -132,7 +142,7 @@ int rpthread_yield() {
 		}
 	}
 	return 0;
-};
+};*/
 
 
 /* terminate a thread */
@@ -246,25 +256,29 @@ int rpthread_mutex_destroy(rpthread_mutex_t *mutex) {
 static void schedule() {
 	puts("Entering scheduler...\n");
 	int  i = 1;	
-	node* ptr = dequeue(&runqueue); 
-	while(ptr != NULL){//1?
+	node* ptr = dequeue(); 
+	if(ptr != NULL){//1?
 		//printf("%d\n", i);
 		//++i; 
 		if(ptr->TCB.status == 0 ){ 
+			node* curThread = runqueue;
+			while(curThread->TCB.status != 1) {
+				curThread = curThread->next;
+			}
+			curThread->TCB.status = 0;
 			ptr->TCB.status = 1; 
-			swapcontext(&mainCntx, ptr->TCB.context);
+			swapcontext(curThread->TCB.context, ptr->TCB.context);
 			printf("returning from thread...\n");
 			//getcontext(&mainCntx);
 			//ptr = runqueue;
 			//continue;
 		}
-		ptr = ptr->next;
 	}
-	ptr = runqueue;
+	/*ptr = runqueue;
 	while(ptr != NULL) {
 		swapcontext(&mainCntx, ptr->TCB.context);
 		ptr = ptr->next;
-	}
+	}*/
 
 	// Every time when timer interrup happens, your thread library 
 	// should be contexted switched from thread context to this 

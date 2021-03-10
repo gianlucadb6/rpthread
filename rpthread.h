@@ -103,7 +103,7 @@ int rpthread_mutex_destroy(rpthread_mutex_t *mutex);
 void enqueue(tcb* block);
 
 /*pop node off of runqueue*/
-tcb* dequeue(node* runqueue);
+node* dequeue();
 
 /*scheduler function */
 static void schedule(void); 
