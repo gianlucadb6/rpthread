@@ -1,6 +1,6 @@
 // File:	rpthread_t.h
 
-// List all group member's name:
+// List all group member's name: Giannluca Delbarba and Charles Rodriguez
 // username of iLab:
 // iLab Server:
 
@@ -32,12 +32,13 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <string.h>
+
 typedef uint rpthread_t;
 
 typedef struct threadControlBlock {
 	/* add important states in a thread control block */
 	// thread Id
-	uint threadid;
+	int threadid;
 	// thread status
 	int status;
 	// thread context
@@ -47,7 +48,13 @@ typedef struct threadControlBlock {
 	// thread priority
 	int priority;
 	// And more ...
-
+	
+	// thread join status
+	int join;
+	//thread that called join
+	struct threadControlBlock* joiner;
+	//number of threads being waited on
+	int waitNum;
 	// YOUR CODE HERE
 
 } tcb; 
@@ -57,6 +64,7 @@ typedef struct node {
 	struct node* next;
 	
 } node;
+
 
 /* mutex struct definition */
 typedef struct rpthread_mutex_t {
@@ -107,6 +115,15 @@ node* dequeue();
 
 /*scheduler function */
 static void schedule(void); 
+
+/*find currently executing thread*/
+node* findCurThread();
+
+/*sets scheduler to perform round robin*/
+static void sched_rr();
+
+/*sets scheduler to perform mlfq*/
+static void sched_mlfq();
 
 #ifdef USE_RTHREAD
 #define pthread_t rpthread_t
